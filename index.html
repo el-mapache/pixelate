@@ -1,0 +1,37 @@
+<!Doctype html>
+<html>
+  <head>
+    <style>
+      canvas {
+
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="pix-canvas" height=200 width=200></canvas>
+    <div>
+      <input type="file" id="file-picker" name="file-picker"/>
+      <label for="file-picker">Choose a file</label>
+    </div>
+    <div id="pix-display"></div>
+    <script src="canvas.js"></script>
+    <script src="image-file-reader.js"></script>
+    <script src="box-blur.js"></script>
+    <script>
+      const filePicker = document.getElementById('file-picker');
+      const htmlCanvas = document.getElementById('pix-canvas');
+      const pixler = window.pixler;
+      const canvasInterface = pixler.canvasInterface(htmlCanvas);
+      const handleFile = async function onChooseFile(fileEvent) {
+        const imgFile = await pixler.readFile(fileEvent);
+        canvasInterface.writeImage(imgFile);
+
+        const blurredData = pixler.boxBlur(canvasInterface.readImage());
+        canvasInterface.writeData(blurredData);
+      };
+
+      canvasInterface.scale();
+      filePicker.addEventListener('change', handleFile);
+    </script>
+  </body>
+</html>
