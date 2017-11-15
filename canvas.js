@@ -9,6 +9,10 @@
   let cachedInstance = null;
 
   Canvas.prototype = {
+    clear() {
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+
     scale(sizeX, sizeY, scale = root.devicePixelRatio) {
       this.canvas.style.height = `${sizeY}px`;
       this.canvas.style.width = `${sizeX}px`;
@@ -29,25 +33,33 @@
     },
 
     resize(height, width) {
-      var hRatio = this.canvas.width / width;
-      var vRatio =  this.canvas.height / height;
-      var ratio = Math.min ( hRatio, vRatio );
-      var centerShift_x = ( this.canvas.width - width * ratio ) / 2;
-      var centerShift_y = ( this.canvas.height - height * ratio ) / 2;
-      var oldImg = this.canvas.toDataURL('image/png');
-      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      return new Promise((resolve, reject) => {
+        const ratio = Math.min(width / this.canvas.width, height / this.canvas.height);
+        const newSize = {
+          width: this.canvas.width * ratio,
+          height: this.canvas.height * ratio
+        };
+        const nextData = this.canvas.toDataURL('image/png');
+        const img = new Image();
 
-      var img = new Image();
+        img.onload = (event) => {
+          const image = event.target;
 
-      img.onload = (event) => {
-        const i = event.target;
-        const { width, height } = i;
+          image.height = newSize.height;
+          image.width = newSize.width;
+          this.canvas.width = newSize.width;
+          this.canvas.height = newSize.height;
+          this.canvas.style.height = `${newSize.height}px`;
+          this.canvas.style.width = `${newSize.width}px`;
 
-        this.context.drawImage(i, 0, 0, width, height,
-          centerShift_x, centerShift_y, width * ratio, height * ratio);
-      };
+          this.clear();
+          this.context.drawImage(image, 0, 0, newSize.width, newSize.height);
 
-      img.src = oldImg;
+          return resolve();
+        };
+
+        img.src = nextData;
+      });
     },
 
     readImage() {

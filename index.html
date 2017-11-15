@@ -3,9 +3,6 @@
   <head>
     <style>
       body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
         margin: 0;
         background-color: #000000;
         height: 100vh;
@@ -14,21 +11,32 @@
       #pix {
         width: 450px;
         height: 450px;
-        margin-left: 60px;
         color: #FFFFFF;
         font-family: monospace;
-        letter-spacing: 12px;
-        line-height: 1.4;
+        font-size: 40px;
+        letter-spacing: 2px;
+        line-height: .4;
+      }
+
+      .flexy {
+        display: flex;
+      }
+
+      .offset60 {
+        margin-left: 60px;
       }
     </style>
   </head>
   <body>
-    <canvas id="pix-canvas" height=200 width=200></canvas>
+    <div class="flexy offset60">
+      <canvas id="pix-canvas" height=200 width=200></canvas>
+      <div id="pix"></div>
+    </div>
+
     <div>
       <input type="file" id="file-picker" name="file-picker"/>
       <label for="file-picker">Choose a file</label>
     </div>
-    <div id="pix"></div>
     <script src="canvas.js"></script>
     <script src="image-file-reader.js"></script>
     <script src="box-blur.js"></script>
@@ -36,28 +44,54 @@
     <script>
       const filePicker = document.getElementById('file-picker');
       const htmlCanvas = document.getElementById('pix-canvas');
+      const dotMatrix = document.getElementById('pix');
       const pixler = window.pixler;
       const canvasInterface = pixler.canvasInterface(htmlCanvas);
       const handleFile = async function onChooseFile(fileEvent) {
         const imgFile = await pixler.readFile(fileEvent);
+        // draw the raw image file
         canvasInterface.writeImage(imgFile);
 
         const blurredData = pixler.boxBlur(canvasInterface.readImage());
+        // draw the blurred image as an intermediary
         canvasInterface.writeData(blurredData);
 
-        const pixelatedColors = pixler.pixelate(canvasInterface.readImage(), 10);
-        canvasInterface.writeData(pixelatedColors);
-        console.log(pixelatedColors);
-        //canvasInterface.resize(24, 24)
-        //
+        canvasInterface.resize(300, 300).then(() => {
+          const resizedBlurredPixels = canvasInterface.readImage();
+          const pixelSize = 20;
+          const [colorList, pixelatedColors ] = pixler.pixelate(resizedBlurredPixels, pixelSize);
+          const pixelHeight = Math.ceil(pixelatedColors.height / pixelSize);
+          const pixelWidth = Math.ceil(pixelatedColors.width / pixelSize);
+          const matrixNodes = dotMatrix.children;
+
+          // show the final pixelated image
+          canvasInterface.writeData(pixelatedColors);
+
+          for (let x = 0; x < pixelWidth; x++) {
+            for (let y = 0; y < pixelHeight; y++) {
+              const currentPixel = y * pixelWidth + x;
+              console.log(currentPixel);
+              const packedColor = colorList[currentPixel];
+              const color = `rgb(${packedColor >> 24 & 0xff}, ${packedColor >> 16 & 0xff}, ${packedColor >> 8 & 0xff})`;
+              const node = matrixNodes[currentPixel];
+              node.style.color = color;
+              if (node.textContent === '.') {
+                node.textContent = 'x';
+              }
+
+            }
+          }
+        });
       };
 
       canvasInterface.scale();
       filePicker.addEventListener('change', handleFile);
 
-      const array = Array(576).fill();
-      const transformedArray = array.map((e, i) => !(i % 23) ? '\n' : '.');
-      document.getElementById('pix').innerHTML = transformedArray.join('');
+      const transformedArray = Array(576)
+        .fill()
+        .map((e, i) => !(i % 23) ? '<span>\n</span>' : '<span>.</span>');
+
+      dotMatrix.innerHTML = transformedArray.join('');
     </script>
   </body>
 </html>
