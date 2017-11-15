@@ -2,8 +2,23 @@
 <html>
   <head>
     <style>
-      canvas {
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+        background-color: #000000;
+        height: 100vh;
+      }
 
+      #pix {
+        width: 450px;
+        height: 450px;
+        margin-left: 60px;
+        color: #FFFFFF;
+        font-family: monospace;
+        letter-spacing: 12px;
+        line-height: 1.4;
       }
     </style>
   </head>
@@ -13,10 +28,11 @@
       <input type="file" id="file-picker" name="file-picker"/>
       <label for="file-picker">Choose a file</label>
     </div>
-    <div id="pix-display"></div>
+    <div id="pix"></div>
     <script src="canvas.js"></script>
     <script src="image-file-reader.js"></script>
     <script src="box-blur.js"></script>
+    <script src="pixelate.js"></script>
     <script>
       const filePicker = document.getElementById('file-picker');
       const htmlCanvas = document.getElementById('pix-canvas');
@@ -28,10 +44,20 @@
 
         const blurredData = pixler.boxBlur(canvasInterface.readImage());
         canvasInterface.writeData(blurredData);
+
+        const pixelatedColors = pixler.pixelate(canvasInterface.readImage(), 10);
+        canvasInterface.writeData(pixelatedColors);
+        console.log(pixelatedColors);
+        //canvasInterface.resize(24, 24)
+        //
       };
 
       canvasInterface.scale();
       filePicker.addEventListener('change', handleFile);
+
+      const array = Array(576).fill();
+      const transformedArray = array.map((e, i) => !(i % 23) ? '\n' : '.');
+      document.getElementById('pix').innerHTML = transformedArray.join('');
     </script>
   </body>
 </html>

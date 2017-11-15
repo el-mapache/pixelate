@@ -28,6 +28,28 @@
       this.context.putImageData(data, 0, 0);
     },
 
+    resize(height, width) {
+      var hRatio = this.canvas.width / width;
+      var vRatio =  this.canvas.height / height;
+      var ratio = Math.min ( hRatio, vRatio );
+      var centerShift_x = ( this.canvas.width - width * ratio ) / 2;
+      var centerShift_y = ( this.canvas.height - height * ratio ) / 2;
+      var oldImg = this.canvas.toDataURL('image/png');
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+      var img = new Image();
+
+      img.onload = (event) => {
+        const i = event.target;
+        const { width, height } = i;
+
+        this.context.drawImage(i, 0, 0, width, height,
+          centerShift_x, centerShift_y, width * ratio, height * ratio);
+      };
+
+      img.src = oldImg;
+    },
+
     readImage() {
       const { canvas } = this;
       return this.context.getImageData(0, 0, canvas.width, canvas.height);
