@@ -1,15 +1,11 @@
 (function(root) {
   root.pixler = root.pixler || {};
 
-  function clamp(value, max) {
-    return value > max ? max : value;
-  }
-
   function getSubImage(uint8array, x, y, width, height) {
     const startPixel = y * width + x;
     let length = width * height * 4;
     length = length > uint8array.length ? uint8array.length - length : length;
-    console.log(startPixel)
+
     return uint8array.slice(startPixel, startPixel + length);
   }
 
@@ -93,7 +89,7 @@
       }
     }
 
-    return [ pixelColorList, imageData ];
+    return { imageData, pixelColorList };
   }
 
   root.pixler.pixelate = pixelate;

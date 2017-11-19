@@ -12,10 +12,16 @@
         width: 450px;
         height: 450px;
         color: #FFFFFF;
-        font-family: monospace;
-        font-size: 40px;
-        letter-spacing: 2px;
-        line-height: .4;
+        font-family: sans-serif;
+        font-size: 60px;
+        letter-spacing: -6px;
+        line-height: .2;
+        margin-left: 20px;
+        margin-top: 40px;
+      }
+
+      #pix-canvas {
+        margin-top: 20px;
       }
 
       .flexy {
@@ -28,18 +34,19 @@
     </style>
   </head>
   <body>
-    <div class="flexy offset60">
-      <canvas id="pix-canvas" height=200 width=200></canvas>
-      <div id="pix"></div>
-    </div>
+    <div class="offset60">
+      <div class="flexy">
+        <canvas id="pix-canvas" height=200 width=200></canvas>
+        <div id="pix"></div>
+      </div>
 
-    <div>
-      <input type="file" id="file-picker" name="file-picker"/>
-      <label for="file-picker">Choose a file</label>
+      <div>
+        <input type="file" id="file-picker" name="file-picker"/>
+        <label for="file-picker">Choose a file</label>
+      </div>
     </div>
     <script src="canvas.js"></script>
     <script src="image-file-reader.js"></script>
-    <script src="box-blur.js"></script>
     <script src="pixelate.js"></script>
     <script>
       const filePicker = document.getElementById('file-picker');
@@ -47,49 +54,60 @@
       const dotMatrix = document.getElementById('pix');
       const pixler = window.pixler;
       const canvasInterface = pixler.canvasInterface(htmlCanvas);
-      const handleFile = async function onChooseFile(fileEvent) {
-        const imgFile = await pixler.readFile(fileEvent);
-        // draw the raw image file
-        canvasInterface.writeImage(imgFile);
+      const matrixDestWidth = 24;
+      const matrixRowLength = matrixDestWidth - 1;
 
-        const blurredData = pixler.boxBlur(canvasInterface.readImage());
-        // draw the blurred image as an intermediary
-        canvasInterface.writeData(blurredData);
-
-        canvasInterface.resize(300, 300).then(() => {
-          const resizedBlurredPixels = canvasInterface.readImage();
-          const pixelSize = 20;
-          const [colorList, pixelatedColors ] = pixler.pixelate(resizedBlurredPixels, pixelSize);
-          const pixelHeight = Math.ceil(pixelatedColors.height / pixelSize);
-          const pixelWidth = Math.ceil(pixelatedColors.width / pixelSize);
+      const processImage = (img) => {
+        canvasInterface.write(img);
+        //TODO: resize should store next image in backing canvas, but return it in case you want to draw
+        canvasInterface.resizeAndDraw(240, 240).then(() => {
+          const pixelSize = 10;
+          const {
+            pixelColorList: colorList,
+            imageData: pixelatedColors
+          } = pixler.pixelate(canvasInterface.read(), pixelSize);
+          const pixelsHeight = Math.ceil(pixelatedColors.height / pixelSize);
+          const pixelsWidth = Math.ceil(pixelatedColors.width / pixelSize);
           const matrixNodes = dotMatrix.children;
 
           // show the final pixelated image
-          canvasInterface.writeData(pixelatedColors);
+          canvasInterface.write(pixelatedColors);
 
-          for (let x = 0; x < pixelWidth; x++) {
-            for (let y = 0; y < pixelHeight; y++) {
-              const currentPixel = y * pixelWidth + x;
-              console.log(currentPixel);
+          for (let y = 0; y < pixelsHeight; y++) {
+            for (let x = 0; x < pixelsWidth; x++) {
+              const rowOffset = (matrixDestWidth - pixelsWidth - 1) * y + 1;
+              const currentPixel = y * pixelsWidth + x;
               const packedColor = colorList[currentPixel];
-              const color = `rgb(${packedColor >> 24 & 0xff}, ${packedColor >> 16 & 0xff}, ${packedColor >> 8 & 0xff})`;
-              const node = matrixNodes[currentPixel];
-              node.style.color = color;
-              if (node.textContent === '.') {
-                node.textContent = 'x';
-              }
 
+              if (packedColor) {
+                const color = `rgb(
+                  ${packedColor >> 24 & 0xff},
+                  ${packedColor >> 16 & 0xff},
+                  ${packedColor >> 8 & 0xff}
+                )`;
+
+                const node = matrixNodes[currentPixel + rowOffset];
+
+                if (!node) continue;
+
+                node.style.color = color;
+              }
             }
           }
         });
       };
 
-      canvasInterface.scale();
+      const handleFile = async function onChooseFile(fileEvent) {
+        const imgFile = await pixler.readFile(fileEvent);
+        processImage(imgFile);
+      };
+
+
       filePicker.addEventListener('change', handleFile);
 
-      const transformedArray = Array(576)
+      const transformedArray = Array(matrixDestWidth * matrixDestWidth)
         .fill()
-        .map((e, i) => !(i % 23) ? '<span>\n</span>' : '<span>.</span>');
+        .map((_, i) => !(i % matrixRowLength) ? '<span>\n</span>' : '<span>.</span>');
 
       dotMatrix.innerHTML = transformedArray.join('');
     </script>
