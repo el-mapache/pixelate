@@ -14,15 +14,21 @@
 	}
 
   function readFile(fileEvent) {
+		const { files } = fileEvent.target;
+
+		if (!files.length) {
+			return;
+		}
+
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 
-			reader.addEventListener('load', async function(e) {
-				const fileUrl = await onDataLoad(e);
+			reader.addEventListener('load', function(e) {
+				const fileUrl = onDataLoad(e);
 				return resolve(fileUrl);
 			});
 
-			reader.readAsDataURL(fileEvent.target.files[0]);
+			reader.readAsDataURL(files[0]);
 		});
   }
 

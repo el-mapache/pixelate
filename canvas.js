@@ -8,8 +8,8 @@
       throw new TypeError('argument must be a dom selector or HTMLElement.');
     }
 
-    this.canvas = typeof canvasEl === 'string' ? document.querySelector(canvasEl) : canvasEl;
-    this.context = this.canvas.getContext('2d');
+    const canvas = typeof canvasEl === 'string' ? document.querySelector(canvasEl) : canvasEl;
+    this.context = canvas.getContext('2d');
     this.backingContext = document.createElement('canvas').getContext('2d');
     this.activeContext = this.context;
   }
@@ -24,7 +24,12 @@
 
   Canvas.prototype = {
     clear() {
-      this.activeContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      const canvas = this.canvas;
+      this.activeContext.clearRect(0, 0, canvas.width, canvas.height);
+    },
+
+    get canvas() {
+      return this.activeContext.canvas;
     },
 
     context() {
@@ -45,37 +50,42 @@
         this.activeContext.putImageData(img, x, y);
       } else if (img instanceof HTMLImageElement) {
         this.scale(img.width, img.height);
-        this.activeContext.drawImage(img, x, y);
+        this.clear();
+        this.activeContext.drawImage(img, x, y, img.width, img.height);
+      }
+    },
+
+    write(img, x = 0, y = 0) {
+      if (validImageType(img)) {
+        this.activeContext = this.context;
+        this.internalWrite(img, x, y);
       }
     },
 
     scale(sizeX, sizeY, scale = root.devicePixelRatio) {
-      this.canvas.style.height = `${sizeY}px`;
-      this.canvas.style.width = `${sizeX}px`;
+      const canvas = this.canvas;
 
-      this.canvas.height = sizeY * scale;
-      this.canvas.width = sizeX * scale;
+      canvas.style.height = `${sizeY}px`;
+      canvas.style.width = `${sizeX}px`;
 
-      this.context.scale(scale, scale);
-    },
+      canvas.height = sizeY * scale;
+      canvas.width = sizeX * scale;
 
-    write(img, x = 0, y = 0, width = this.canvas.width, height = this.canvas.height) {
-      if (validImageType(img)) {
-        this.activeContext = this.context;
-        this.internalWrite(img, x, y, width, height);
-      }
+      this.activeContext.scale(scale, scale);
     },
 
     getDataURL() {
-      return this.activeContext.canvas.toDataURL('image/png');
+      return this.canvas.toDataURL('image/png');
     },
 
     resizeAndDraw(height, width) {
+      const canvas = this.canvas;
+
       return new Promise((resolve, reject) => {
-        const ratio = Math.min(width / this.canvas.width, height / this.canvas.height);
+        const ratio = Math.min(width / canvas.width, height / canvas.height);
         const newSize = {
-          width: this.canvas.width * ratio,
-          height: this.canvas.height * ratio
+          width: canvas.width * ratio,
+          height: canvas.height * ratio
         };
 
         const nextData = this.getDataURL();
@@ -87,9 +97,7 @@
           image.height = newSize.height;
           image.width = newSize.width;
 
-          this.clear();
-          this.scale(image.width, image.height);
-          this.activeContext.drawImage(image, 0, 0, image.width, image.height);
+          this.write(image);
 
           return resolve();
         };
@@ -100,7 +108,7 @@
 
     read() {
       const context = this.activeContext;
-      return context.getImageData(0, 0, context.canvas.width, context.canvas.height);
+      return context.getImageData(0, 0, this.canvas.width, this.canvas.height);
     }
   };
 

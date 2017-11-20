@@ -2,8 +2,12 @@
 <html>
   <head>
     <style>
-      body {
+      html, body {
         margin: 0;
+        padding: 0;
+      }
+
+      body {
         background-color: #000000;
         height: 100vh;
       }
@@ -17,7 +21,6 @@
         letter-spacing: -6px;
         line-height: .2;
         margin-left: 20px;
-        margin-top: 40px;
       }
 
       #pix-canvas {
@@ -54,14 +57,14 @@
       const dotMatrix = document.getElementById('pix');
       const pixler = window.pixler;
       const canvasInterface = pixler.canvasInterface(htmlCanvas);
+      const pixelSize = 10 * window.devicePixelRatio;
       const matrixDestWidth = 24;
       const matrixRowLength = matrixDestWidth - 1;
 
       const processImage = (img) => {
-        canvasInterface.write(img);
+        canvasInterface.store(img);
         //TODO: resize should store next image in backing canvas, but return it in case you want to draw
         canvasInterface.resizeAndDraw(240, 240).then(() => {
-          const pixelSize = 10;
           const {
             pixelColorList: colorList,
             imageData: pixelatedColors
