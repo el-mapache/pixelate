@@ -64,7 +64,7 @@
       const processImage = (img) => {
         canvasInterface.store(img);
         //TODO: resize should store next image in backing canvas, but return it in case you want to draw
-        canvasInterface.resizeAndDraw(240, 240).then(() => {
+        canvasInterface.resize(240, 240).then(_ => {
           const {
             pixelColorList: colorList,
             imageData: pixelatedColors
@@ -100,9 +100,11 @@
         });
       };
 
-      const handleFile = async function onChooseFile(fileEvent) {
-        const imgFile = await pixler.readFile(fileEvent);
-        processImage(imgFile);
+      const validFileTypes = ['png', 'jpeg', 'jpg', 'gif'];
+      const handleFile = function onChooseFile(fileEvent) {
+        pixler.readFile(fileEvent, validFileTypes).then(imgFile => {
+          processImage(imgFile);
+        });
       };
 
 

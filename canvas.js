@@ -1,14 +1,13 @@
 (function(root, nodeRoot) {
   root.pixler = root.pixler || {};
 
-  let cachedInstance = null;
-
   function Canvas(canvasEl) {
     if (!(canvasEl instanceof HTMLElement) && typeof canvasEl !== 'string') {
       throw new TypeError('argument must be a dom selector or HTMLElement.');
     }
 
     const canvas = typeof canvasEl === 'string' ? document.querySelector(canvasEl) : canvasEl;
+
     this.context = canvas.getContext('2d');
     this.backingContext = document.createElement('canvas').getContext('2d');
     this.activeContext = this.context;
@@ -46,11 +45,12 @@
         return;
       }
 
+      this.scale(img.width, img.height);
+      this.clear();
+
       if (img instanceof ImageData) {
         this.activeContext.putImageData(img, x, y);
       } else if (img instanceof HTMLImageElement) {
-        this.scale(img.width, img.height);
-        this.clear();
         this.activeContext.drawImage(img, x, y, img.width, img.height);
       }
     },
@@ -78,7 +78,7 @@
       return this.canvas.toDataURL('image/png');
     },
 
-    resizeAndDraw(height, width) {
+    resize(height, width) {
       const canvas = this.canvas;
 
       return new Promise((resolve, reject) => {
@@ -87,8 +87,6 @@
           width: canvas.width * ratio,
           height: canvas.height * ratio
         };
-
-        const nextData = this.getDataURL();
         const img = new Image();
 
         img.onload = (event) => {
@@ -97,12 +95,12 @@
           image.height = newSize.height;
           image.width = newSize.width;
 
-          this.write(image);
+          this.store(image);
 
-          return resolve();
+          return resolve(image);
         };
 
-        img.src = nextData;
+        img.src = this.getDataURL();
       });
     },
 
@@ -113,10 +111,6 @@
   };
 
   root.pixler.canvasInterface = function(canvasEl) {
-    if (!cachedInstance) {
-      cachedInstance = new Canvas(canvasEl);
-    }
-
-    return cachedInstance;
+    return new Canvas(canvasEl);
   };
 })(window, document);
